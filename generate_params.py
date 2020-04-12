@@ -34,7 +34,7 @@ def image_gen(batch_size, in_dim, in_channels):
 
 
 ## generating parameter files
-f = open("neuralODE_params.h", "w+")
+f = open("neuralODE_1layer_params.h", "w+")
 
 f.write("#ifndef NEURALODE_PARAMETERS_H\n")
 f.write("#define NEURALODE_PARAMETERS_H\n\n")
@@ -44,10 +44,10 @@ f.write("#include <include/gemmini_params.h>\n#include <stdbool.h>\n\n")
 conv1_batch_size = 32
 conv1_in_dim = 3
 conv1_kernel_size = 3
-conv1_in_channels = 16
-conv1_out_channels = 16
+conv1_in_channels = 32
+conv1_out_channels = 32
 conv1_stride = 1
-conv1_bias = False
+conv1_bias = 1
 conv1_depthwidth = 0
 conv1_out_dim = 3
 conv1_pool_size = 1
@@ -90,7 +90,7 @@ f.close()
 
 
 ## generate input activation files
-f = open("neuralODE_image.h", "w+")
+f = open("neuralODE_1layer_images.h", "w+")
 
 in_imag = image_gen(conv1_batch_size, conv1_in_dim, conv1_in_channels)
 
