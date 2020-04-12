@@ -8,6 +8,6 @@ static const elem_t conv_1_w[144][16] row_align(1) = {{3,3,5,6,9,17,8,13,1,15,15
 static const acc_t conv_1_b[16] row_align(1) = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 static elem_t conv_1_in[288][144] row_align(1);
 static elem_t conv_1_out[288][16] row_align(1);
-static const struct ConvParams conv_1_params = {.batch_size=32, .in_dim=3, .kernel_size=3, .in_channels=16, .out_channels=16, .stride=1, .padding=2, .bias=False, .depthwise=0, .out_dim=3, .n_patches=288, .patch_size=144, .pool_size=1, .pool_stride=1, .pool_padding=0, .out_dim_pooled=3, .output_scale=1, .I=288, .J=16, .K=144, .res_scale=0};
+static const struct ConvParams conv_1_params = {.batch_size=32, .in_dim=3, .kernel_size=3, .in_channels=16, .out_channels=16, .stride=1, .padding=2, .bias=1, .depthwise=0, .out_dim=3, .n_patches=288, .patch_size=144, .pool_size=1, .pool_stride=1, .pool_padding=0, .out_dim_pooled=3, .output_scale=1, .I=288, .J=16, .K=144, .res_scale=0};
 
 #endif

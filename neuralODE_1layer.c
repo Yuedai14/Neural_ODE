@@ -7,8 +7,8 @@
 #include "include/gemmini.h"
 #include "include/gemmini_nn.h"
 
-#include "neuralODE_params.h"
-#include "neuralODE_image.h"
+#include "neuralODE_1layer_params.h"
+#include "neuralODE_1layer_images.h"
 
 int main (int argc, char * argv[]) {
 #ifndef BAREMETAL

@@ -2,7 +2,8 @@ include $(abs_top_srcdir)/Makefrag
 
 tests = \
  	mobilenet \
-	resnet50
+	resnet50\
+	neuralODE_1layer
 
 tests_baremetal = $(tests:=-baremetal)
 ifdef BAREMETAL_ONLY
@@ -46,11 +47,11 @@ vpath %.c $(src_dir)
 vpath %_params.h $(src_dir)
 vpath %_images.h $(src_dir)
 
-%-baremetal: %.c %_params.h $(src_dir)/images.h $(GEMMINI_HEADERS)
+%-baremetal: %.c %_params.h $(src_dir)/neuralODE_1layer_images.h $(GEMMINI_HEADERS)
 	$(CC_BAREMETAL) $(CFLAGS_BAREMETAL) $< $(LFLAGS) -o $@ \
 		$(wildcard $(BENCH_COMMON)/*.c) $(wildcard $(BENCH_COMMON)/*.S) $(LIBS)
 
-%-linux: %.c %_params.h $(src_dir)/images.h $(GEMMINI_HEADERS)
+%-linux: %.c %_params.h $(src_dir)/neuralODE_1layer_images.h $(GEMMINI_HEADERS)
 	$(CC_LINUX) $(CFLAGS) $< $(LFLAGS) -o $@
 
 junk += $(tests_baremetal) $(tests_linux)
