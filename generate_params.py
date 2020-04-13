@@ -6,10 +6,10 @@ import math
 def convParam_gen(batch_size, in_dim, kernel_size, in_channels, out_channels, stride, out_dim, bias, depthwidth, pool_size, pool_stride, out_dim_pooled, output_scale):
     
     # initialize all parameters
-    padding = math.floor(out_dim*stride + kernel_size - 1 - in_dim)
+    padding = math.floor((out_dim*stride + kernel_size - 1 - in_dim)/2)
     n_patches =  math.ceil(in_dim/stride)* math.ceil(in_dim/stride) * batch_size
     patch_size = kernel_size * kernel_size * in_channels
-    pool_padding = math.floor(out_dim_pooled*pool_stride + pool_size - 1 - out_dim)
+    pool_padding = math.floor((out_dim_pooled*pool_stride + pool_size - 1 - out_dim)/2)
     I = n_patches
     J = out_channels
     K = patch_size
