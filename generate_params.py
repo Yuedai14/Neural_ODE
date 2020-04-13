@@ -41,11 +41,11 @@ f.write("#define NEURALODE_PARAMETERS_H\n\n")
 f.write("#include <include/gemmini_params.h>\n#include <stdbool.h>\n\n")
 
 ## layer 1
-conv1_batch_size = 32
+conv1_batch_size = 64
 conv1_in_dim = 3
 conv1_kernel_size = 3
-conv1_in_channels = 32
-conv1_out_channels = 32
+conv1_in_channels = 64
+conv1_out_channels = 64
 conv1_stride = 1
 conv1_bias = 1
 conv1_depthwidth = 0
