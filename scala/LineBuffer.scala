@@ -7,7 +7,7 @@ import gemmini.Util._
 
 
 // TODO" This is a naive implementation of vector multiplication
-class VecMul[T <: Data](inputType: T, outputType: T, vecSize: Int)(implicit ev: Arithmetic[T]) extend Module{
+class VecMul[T <: Data](inputType: T, outputType: T, vecSize: Int)(implicit ev: Arithmetic[T]) extends Module{
 	import ev._
     val io = IO(new Bundle{
 		val in_vec_a = Input(Vec(vecSize, inputType))
@@ -16,7 +16,7 @@ class VecMul[T <: Data](inputType: T, outputType: T, vecSize: Int)(implicit ev: 
 		val out_c = Output(outputType)
 	})
 	
-	io.out_c := (in_vec_a zip in_vec_b).map(_*_).reduce(_+_)
+	io.out_c := (io.in_vec_a, io.in_vec_b).zipped.map(_*_).reduce(_+_)
 }
 
 class LineBufferConfig[T <: Data : Arithmetic](inputSize: Int, kernelSize: Int) extends Bundle{
@@ -31,7 +31,7 @@ class LineBuffer[T <: Data : Arithmetic, U <: TagQueueTag with Data]
   (inputType: T, val outputType: T, accType: T,
    tagType: U, df: Dataflow.Value, pe_latency: Int,
    tileRows: Int, tileColumns: Int, meshRows: Int, meshColumns: Int,
-   leftBanks: Int, upBanks: Int, outBanks: Int = 1, kernelSize: Int = 4, inputBufferSize = 64, padding = 1)
+   leftBanks: Int, upBanks: Int, outBanks: Int = 1, kernelSize: Int = 4, inputBufferSize:Int = 64, padding:Int = 1)
   extends Module {
 
   val B_TYPE = Vec(meshColumns, Vec(tileColumns, inputType))
@@ -42,7 +42,7 @@ class LineBuffer[T <: Data : Arithmetic, U <: TagQueueTag with Data]
   val io = IO(new Bundle {
     val b = Flipped(Decoupled(B_TYPE))
     val k = Flipped(Decoupled(K_TYPE))
-	val k_len = Flipped(Decoupled(UInt(log2Up(kernelSize*kernelSize/meshColumns)+1).W)))
+	val k_len = Flipped(Decoupled(UInt((log2Up(kernelSize*kernelSize/meshColumns)+1).W)))
     // LineBuffer control, only work when this signal is high
 	// Execute controller needs to count output numbers and set lb_control low after finishing all convolutions
     val lb_control = Input(Bool())
@@ -60,12 +60,12 @@ class LineBuffer[T <: Data : Arithmetic, U <: TagQueueTag with Data]
   val inputBuffer =  RegInit(VecInit(Seq.fill(meshColumns)(VecInit(Seq.fill(inputBufferSize)((0.U).asTypeOf(inputType)))))) 
   
   // pointer for line buffer
-  val bufferPointer_x = RegInit((0.U)(2*log2Up(inputBufferSize).W))
-  val bufferPointer_y = RegInit((0.U)(2*log2Up(inputBufferSize).W))
-  val bufferPointer   = Wire(UInt(2*log2Up(inputBufferSize).W))
-  val kernelPointer_x = RegInit((0.U)(2*log2Up(inputBufferSize).W))
-  val kernelPointer_y = RegInit((0.U)(2*log2Up(inputBufferSize).W))
-  val kernelPointer   = Wire(UInt(2*log2Up(inputBufferSize).W))
+  val bufferPointer_x = RegInit((0.U)((2*log2Up(inputBufferSize)).W))
+  val bufferPointer_y = RegInit((0.U)((2*log2Up(inputBufferSize)).W))
+  val bufferPointer   = Wire(UInt((2*log2Up(inputBufferSize)).W))
+  val kernelPointer_x = RegInit((0.U)((2*log2Up(inputBufferSize)).W))
+  val kernelPointer_y = RegInit((0.U)((2*log2Up(inputBufferSize)).W))
+  val kernelPointer   = Wire(UInt((2*log2Up(inputBufferSize)).W))
  
 
   val lb_control_prev = RegInit(false.B)
@@ -94,7 +94,7 @@ class LineBuffer[T <: Data : Arithmetic, U <: TagQueueTag with Data]
   when(io.lb_config.fire()){
 	inSize := io.lb_config.bits.inSize
 	realKernelSize := io.lb_config.bits.realKernelSize
-	continuous := io,lb_config.bits.continuous
+	continuous := io.lb_config.bits.continuous
 	bufferPointer_x := padding.U
 	bufferPointer_y := padding.U
 	configWritten := true.B
@@ -111,10 +111,10 @@ class LineBuffer[T <: Data : Arithmetic, U <: TagQueueTag with Data]
   when(configWritten && !convSeqWritten){
 	when(convSeqCounter === (kernelSize*kernelSize-1).U){
 		convSeq(convSeqCounter) := (inputBufferSize+3).U
-		convSeqWritten = true.B
+		convSeqWritten := true.B
 	}.otherwise{
 		when(convSeqCounter < realKernelSize * realKernelSize){
-			convSeq(convSeqCounter) := (inSize + 2*padding.U)*convSeqCounter_y + convSeqCounter_x
+			convSeq(convSeqCounter) := (inSize + (2*padding).U)*convSeqCounter_y + convSeqCounter_x
 			when(convSeqCounter_x === realKernelSize - 1.U){
 				when(convSeqCounter_y < realKernelSize - 1.U){
 					convSeqCounter_x := 0.U
@@ -161,12 +161,12 @@ class LineBuffer[T <: Data : Arithmetic, U <: TagQueueTag with Data]
 			bufferPointer_y := bufferPointer_y + 1.U
 			// TODO: the last line padding needs to be more careful
 			when(bufferPointer_y === inSize + padding.U - 1.U){
-				for(i -> 0 until 12*padding){
-    				buff(bufferPointer(log2Up(inputBufferSize-1,0))+(i+1).U) := (0.U).asTypeOf(inputType)
+				for(i <- 0 until 12*padding){
+    				inputBuffer.foreach((buff) => buff(bufferPointer(log2Up(inputBufferSize)-1,0)+(i+1).U) := (0.U).asTypeOf(inputType))
 				}
 			}.otherwise{
-				for(i -> 0 until 2*padding){
-    				buff(bufferPointer(log2Up(inputBufferSize-1,0))+(i+1).U) := (0.U).asTypeOf(inputType)
+				for(i <- 0 until 2*padding){
+    				inputBuffer.foreach((buff) => buff(bufferPointer(log2Up(inputBufferSize)-1,0)+(i+1).U) := (0.U).asTypeOf(inputType))
 				}
 			}
 		}
@@ -178,7 +178,7 @@ class LineBuffer[T <: Data : Arithmetic, U <: TagQueueTag with Data]
         kernelMoveBegin := true.B
     }
 
-    (inputBuffer zip io.b.bits).foreach{case(buff, in) => buff(bufferPointer(log2Up(inputBufferSize-1,0))) := in(0)}
+    (inputBuffer zip io.b.bits).foreach{case(buff, in) => buff(bufferPointer(log2Up(inputBufferSize)-1,0)) := in(0)}
   }
 
   // Compute Output
@@ -186,7 +186,7 @@ class LineBuffer[T <: Data : Arithmetic, U <: TagQueueTag with Data]
   val trueKernelPointer = Wire(Vec(kernelSize*kernelSize, UInt((log2Up(inputBufferSize)+1).W)))
   (trueKernelPointer zip convSeq).foreach{case(p,s) => p := s + kernelPointer}
   computeMesh.zipWithIndex.foreach{case(permesh,z) => permesh.zipWithIndex.foreach{case(mesh, y) => 
-		mesh := Mux(convSeq(y) > inputBuffer.U, 0.U, inputBuffer(z)(trueKernelPointer(y)(log2Up(inputBufferSize)-1,0))) 
+		mesh := Mux(convSeq(y) > inputBufferSize.U, 0.U, inputBuffer(z)(trueKernelPointer(y)(log2Up(inputBufferSize)-1,0))) 
   }}
   when(kernelMoveBegin & io.out.ready){
 	when(kernelPointer_x === inSize-1.U){
@@ -202,9 +202,9 @@ class LineBuffer[T <: Data : Arithmetic, U <: TagQueueTag with Data]
   }
 
   val vecMul = Seq.tabulate(meshColumns){m => Module(new VecMul(inputType, inputType, kernelSize*kernelSize)).io}
-  vecMul.zipWithIndex.foreach{case(vec, i) => vec.io.in_vec_a := computeMesh(i)
-											  vec.io.in_vec_b := kernelMatrix
-											  io.out.bits(i) := vec.io.out_c
+  vecMul.zipWithIndex.foreach{case(vec, i) => vec.in_vec_a := computeMesh(i)
+											  vec.in_vec_b := kernelMatrix
+											  io.out.bits(i) := vec.out_c
   }
   // Connect to output
   io.out.valid := kernelMoveBegin & io.lb_control	
@@ -223,7 +223,7 @@ class LineBuffer[T <: Data : Arithmetic, U <: TagQueueTag with Data]
     bufferPointer_y := padding.U
     kernelPointer_x := 0.U
     kernelPointer_y := 0.U
-	convSeqCounter.foreach((a) => a := (inputBufferSize+3).U)
+	convSeq.foreach((a) => a := (inputBufferSize+3).U)
 	convSeqCounter_x := 0.U
     convSeqCounter_y := 0.U
     k_len := 0.U
