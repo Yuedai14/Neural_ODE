@@ -144,7 +144,7 @@ class LineBuffer[T <: Data : Arithmetic, U <: /*TagQueueTag with*/ Data]
     when(k_len_counter === k_len - 1.U){
       kernelWritten := true.B
     }.otherwise{
-	  k_len := k_len+1.U
+	  k_len_counter := k_len_counter+1.U
 	  kernelStorePointer := kernelStorePointer + meshColumns.U	
     }
   }

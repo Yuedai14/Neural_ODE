@@ -13,6 +13,7 @@ class LineBufferTester(c: LineBuffer[SInt, UInt], inputSeq: Seq[Seq[Int]], kerne
 	val maxWait = 100
 	
 	poke(c.io.out.ready, true)
+	poke(c.io.lb_control, false)
 	// set configuration
 	val k_len = kernel.length
 	poke(c.io.k_len.valid, true)
@@ -22,6 +23,7 @@ class LineBufferTester(c: LineBuffer[SInt, UInt], inputSeq: Seq[Seq[Int]], kerne
 	poke(c.io.lb_config.bits.inSize, inSize)
 	poke(c.io.lb_config.bits.realKernelSize, realKernelSize)
 	poke(c.io.lb_config.bits.continuous, continuous)
+	poke(c.io.lb_control, true)
 
 	step(1)
 	poke(c.io.k_len.valid, false)
@@ -46,7 +48,7 @@ class LineBufferTester(c: LineBuffer[SInt, UInt], inputSeq: Seq[Seq[Int]], kerne
 	cycleWaiting = 0
 	while(peek(c.io.b.ready) == BigInt(0) && cycleWaiting < maxWait){
 		cycleWaiting += 1
-		if (cycleWaiting >= maxWait){expect(false, "wait for k too long")}
+		if (cycleWaiting >= maxWait){expect(false, "wait for input too long")}
 		step(1)
 	}
 	println("Begin to feed input")
