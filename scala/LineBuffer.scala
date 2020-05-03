@@ -98,8 +98,8 @@ class LineBuffer[T <: Data : Arithmetic, U <: /*TagQueueTag with*/ Data]
 	bufferPointer_y := padding.U
 	configWritten := true.B
   }
-  bufferPointer := bufferPointer_y * inSize + bufferPointer_x 
-  kernelPointer := kernelPointer_y * inSize + kernelPointer_x
+  bufferPointer := bufferPointer_y * (inSize + (2*padding).U) + bufferPointer_x 
+  kernelPointer := kernelPointer_y * (inSize + (2*padding).U) + kernelPointer_x
 
   // Calculate convSeq
   val convSeq = Reg(Vec(kernelSize*kernelSize, UInt((log2Up(inputBufferSize)+1).W)))
@@ -151,6 +151,8 @@ class LineBuffer[T <: Data : Arithmetic, U <: /*TagQueueTag with*/ Data]
   
 
   // Begin to store weight activations into inputBuffer
+  val beginBound = Wire(UInt(log2Up(inputBufferSize*inputBufferSize).W))
+  beginBound := (realKernelSize - 1.U)*(inSize+(2*padding).U) + realKernelSize - 1.U
   when(kernelWritten & io.b.fire()){
 	when(bufferPointer_x === inSize + padding.U - 1.U){
 		bufferPointer_x := padding.U
@@ -173,7 +175,7 @@ class LineBuffer[T <: Data : Arithmetic, U <: /*TagQueueTag with*/ Data]
         bufferPointer_x := bufferPointer_x + 1.U
     }
     
-    when(bufferPointer_y >= realKernelSize && bufferPointer_x >= realKernelSize){
+    when(bufferPointer >= beginBound){
         kernelMoveBegin := true.B
     }
 
