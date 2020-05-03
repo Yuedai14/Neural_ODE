@@ -27,11 +27,10 @@ class LineBufferConfig[T <: Data : Arithmetic](inputSize: Int, kernelSize: Int) 
 	override def cloneType: LineBufferConfig.this.type = new LineBufferConfig(inputSize, kernelSize).asInstanceOf[this.type]
 }
 
-class LineBuffer[T <: Data : Arithmetic, U <: TagQueueTag with Data]
+class LineBuffer[T <: Data : Arithmetic, U <: /*TagQueueTag with*/ Data]
   (inputType: T, val outputType: T, accType: T,
-   tagType: U, df: Dataflow.Value, pe_latency: Int,
-   tileRows: Int, tileColumns: Int, meshRows: Int, meshColumns: Int,
-   leftBanks: Int, upBanks: Int, outBanks: Int = 1, kernelSize: Int = 4, inputBufferSize:Int = 64, padding:Int = 1)
+   tagType: U, tileRows: Int, tileColumns: Int, meshRows: Int, meshColumns: Int,
+   kernelSize: Int = 4, inputBufferSize:Int = 64, padding:Int = 1)
   extends Module {
 
   val B_TYPE = Vec(meshColumns, Vec(tileColumns, inputType))
@@ -186,7 +185,7 @@ class LineBuffer[T <: Data : Arithmetic, U <: TagQueueTag with Data]
   val trueKernelPointer = Wire(Vec(kernelSize*kernelSize, UInt((log2Up(inputBufferSize)+1).W)))
   (trueKernelPointer zip convSeq).foreach{case(p,s) => p := s + kernelPointer}
   computeMesh.zipWithIndex.foreach{case(permesh,z) => permesh.zipWithIndex.foreach{case(mesh, y) => 
-		mesh := Mux(convSeq(y) > inputBufferSize.U, 0.U, inputBuffer(z)(trueKernelPointer(y)(log2Up(inputBufferSize)-1,0))) 
+		mesh := Mux(convSeq(y) > inputBufferSize.U, 0.S, inputBuffer(z)(trueKernelPointer(y)(log2Up(inputBufferSize)-1,0))) 
   }}
   when(kernelMoveBegin & io.out.ready){
 	when(kernelPointer_x === inSize-1.U){
@@ -204,7 +203,7 @@ class LineBuffer[T <: Data : Arithmetic, U <: TagQueueTag with Data]
   val vecMul = Seq.tabulate(meshColumns){m => Module(new VecMul(inputType, inputType, kernelSize*kernelSize)).io}
   vecMul.zipWithIndex.foreach{case(vec, i) => vec.in_vec_a := computeMesh(i)
 											  vec.in_vec_b := kernelMatrix
-											  io.out.bits(i) := vec.out_c
+											  io.out.bits(i)(0) := vec.out_c
   }
   // Connect to output
   io.out.valid := kernelMoveBegin & io.lb_control	
