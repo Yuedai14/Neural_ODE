@@ -27,7 +27,7 @@ class LineBufferConfig[T <: Data : Arithmetic](inputSize: Int, kernelSize: Int) 
 	override def cloneType: LineBufferConfig.this.type = new LineBufferConfig(inputSize, kernelSize).asInstanceOf[this.type]
 }
 
-class LineBuffer[T <: Data : Arithmetic, U <: /*TagQueueTag with*/ Data]
+class LineBuffer[T <: Data : Arithmetic, U <: TagQueueTag with Data]
   (inputType: T, val outputType: T, accType: T,
    tagType: U, tileRows: Int, tileColumns: Int, meshRows: Int, meshColumns: Int,
    kernelSize: Int = 4, inputBufferSize:Int = 64, padding:Int = 1)
